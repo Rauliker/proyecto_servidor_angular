@@ -12,15 +12,32 @@ import { AuthService } from './services/auth.service';
 export class App {
   private readonly authService = inject(AuthService);
 
+  protected isRegistering = true;
+  protected name = '';
   protected email = '';
   protected password = '';
+  protected confirmPassword = '';
   protected showPassword = false;
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly successMessage = signal('');
 
-  protected login(): void {
+  protected toggleMode(): void {
+    this.isRegistering = !this.isRegistering;
+    this.name = '';
+    this.email = '';
+    this.password = '';
+    this.confirmPassword = '';
+    this.errorMessage.set('');
+    this.successMessage.set('');
+  }
+
+  protected submit(): void {
     if (this.isLoading()) {
+      return;
+    }
+
+    if (this.isRegistering && this.password !== this.confirmPassword) {
       return;
     }
 
@@ -28,14 +45,23 @@ export class App {
     this.successMessage.set('');
     this.isLoading.set(true);
 
-    this.authService
-      .login({
-        email: this.email,
-        password: this.password,
-      })
+    const request = this.isRegistering
+      ? this.authService.register({
+          name: this.name,
+          email: this.email,
+          password: this.password,
+        })
+      : this.authService.login({
+          email: this.email,
+          password: this.password,
+        });
+
+    request
       .subscribe({
         next: () => {
-          this.successMessage.set('Sesión iniciada correctamente.');
+          this.successMessage.set(
+            this.isRegistering ? 'Tu cuenta se creó correctamente.' : 'Sesión iniciada correctamente.',
+          );
           this.isLoading.set(false);
         },
         error: (error: HttpErrorResponse) => {

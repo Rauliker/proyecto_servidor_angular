@@ -7,24 +7,49 @@
 
     <div class="welcome-copy">
       <p class="eyebrow">Tu espacio, a un paso</p>
-      <h1>Todo empieza con una buena conexión.</h1>
-      <p>Accede a tu cuenta para continuar trabajando en tus proyectos.</p>
+      <h1>Empieza a construir algo increíble.</h1>
+      <p>Crea tu cuenta para guardar y gestionar todos tus proyectos desde un mismo lugar.</p>
     </div>
 
     <p class="panel-footer">© 2026 ProyectoServidor</p>
   </section>
 
-  <section class="login-panel" aria-labelledby="login-title">
+  <section class="login-panel" [attr.aria-labelledby]="isRegistering ? 'register-title' : 'login-title'">
     <div class="login-card">
       <div class="brand mobile-brand">
         <span class="brand-mark" aria-hidden="true">P</span>
         <span>ProyectoServidor</span>
       </div>
 
-      <h2 id="login-title">Inicia sesión</h2>
-      <p class="subtitle">Introduce tus datos para acceder a tu cuenta.</p>
+      @if (isRegistering) {
+        <h2 id="register-title">Crea tu cuenta</h2>
+        <p class="subtitle">Regístrate gratis para empezar.</p>
+      } @else {
+        <h2 id="login-title">Inicia sesión</h2>
+        <p class="subtitle">Introduce tus datos para acceder a tu cuenta.</p>
+      }
 
-      <form (ngSubmit)="login()" #loginForm="ngForm">
+      <form (ngSubmit)="submit()" #authForm="ngForm">
+        @if (isRegistering) {
+          <label class="field">
+            <span class="field-label">Nombre completo</span>
+            <span class="input-wrap">
+              <input
+                type="text"
+                name="name"
+                [(ngModel)]="name"
+                placeholder="Tu nombre"
+                autocomplete="name"
+                required
+                #nameInput="ngModel"
+              />
+            </span>
+            @if (nameInput.invalid && nameInput.touched) {
+              <span class="message error-message">Escribe tu nombre.</span>
+            }
+          </label>
+        }
+
         <label class="field">
           <span class="field-label">Correo electrónico</span>
           <span class="input-wrap">
@@ -33,7 +58,7 @@
               name="email"
               [(ngModel)]="email"
               placeholder="nombre@ejemplo.com"
-              autocomplete="username"
+              autocomplete="email"
               required
               email
               #emailInput="ngModel"
@@ -52,9 +77,10 @@
               class="password-input"
               name="password"
               [(ngModel)]="password"
-              placeholder="Escribe tu contraseña"
-              autocomplete="current-password"
+              placeholder="Mínimo 8 caracteres"
+              [attr.autocomplete]="isRegistering ? 'new-password' : 'current-password'"
               required
+              [minlength]="isRegistering ? 8 : 1"
               #passwordInput="ngModel"
             />
             <button
@@ -66,13 +92,39 @@
               {{ showPassword ? 'Ocultar' : 'Mostrar' }}
             </button>
           </span>
-          @if (passwordInput.invalid && passwordInput.touched) {
+          @if (passwordInput.hasError('required') && passwordInput.touched) {
             <span class="message error-message">La contraseña es obligatoria.</span>
+          } @else if (passwordInput.hasError('minlength') && passwordInput.touched) {
+            <span class="message error-message">La contraseña debe tener al menos 8 caracteres.</span>
           }
         </label>
 
-        <button class="submit-button" type="submit" [disabled]="loginForm.invalid || isLoading()">
-          {{ isLoading() ? 'Conectando…' : 'Entrar' }}
+        @if (isRegistering) {
+          <label class="field">
+            <span class="field-label">Confirma tu contraseña</span>
+            <span class="input-wrap">
+              <input
+                type="password"
+                name="confirmPassword"
+                [(ngModel)]="confirmPassword"
+                placeholder="Repite tu contraseña"
+                autocomplete="new-password"
+                required
+                #confirmPasswordInput="ngModel"
+              />
+            </span>
+            @if (confirmPasswordInput.touched && confirmPassword !== password) {
+              <span class="message error-message">Las contraseñas no coinciden.</span>
+            }
+          </label>
+        }
+
+        <button
+          class="submit-button"
+          type="submit"
+          [disabled]="authForm.invalid || isLoading() || (isRegistering && confirmPassword !== password)"
+        >
+          {{ isLoading() ? 'Enviando…' : isRegistering ? 'Crear cuenta' : 'Entrar' }}
         </button>
 
         @if (errorMessage()) {
@@ -83,7 +135,15 @@
         }
       </form>
 
-      <p class="security-note">Tu información se envía de forma segura.</p>
+      <p class="security-note">
+        Tu información se envía de forma segura.
+      </p>
+      <p class="account-prompt">
+        {{ isRegistering ? '¿Ya tienes una cuenta?' : '¿Todavía no tienes una cuenta?' }}
+        <button class="mode-button" type="button" (click)="toggleMode()">
+          {{ isRegistering ? 'Inicia sesión' : 'Regístrate' }}
+        </button>
+      </p>
     </div>
   </section>
 </main>

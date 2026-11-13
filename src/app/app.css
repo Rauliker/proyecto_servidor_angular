@@ -233,6 +233,27 @@
   text-align: center;
 }
 
+.account-prompt {
+  margin: 18px 0 0;
+  color: #6d7484;
+  font-size: 13px;
+  text-align: center;
+}
+
+.mode-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #3455d1;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+}
+
+.mode-button:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 760px) {
   .page {
     grid-template-columns: 1fr;
