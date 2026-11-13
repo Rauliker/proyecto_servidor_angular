@@ -2,11 +2,11 @@
   "name": "proyecto-servidor",
   "version": "0.0.0",
   "scripts": {
-    "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test",
+    "ng": "node scripts/angular-cli.js",
+    "start": "node scripts/angular-cli.js serve",
+    "build": "node scripts/angular-cli.js build",
+    "watch": "node scripts/angular-cli.js build --watch --configuration development",
+    "test": "node scripts/angular-cli.js test",
     "serve:ssr:proyecto_servidor": "node dist/proyecto_servidor/server/server.mjs"
   },
   "private": true,
