@@ -61,6 +61,12 @@ function getRegistrationErrorMessage(error: HttpErrorResponse): string {
       return 'Ya existe una cuenta con ese correo o nombre de usuario.';
     }
 
+    if (error.status === 401) {
+      return `La API respondió HTTP 401 (No autorizado) al registrar. ${
+        typeof response['error'] === 'string' ? `Detalle: ${response['error']}.` : 'No devolvió una causa concreta.'
+      } Comprueba que POST /usuarios permita crear cuentas sin iniciar sesión.`;
+    }
+
     if (typeof response['error'] === 'string' && response['error'].trim()) {
       return response['error'].trim();
     }
@@ -70,6 +76,10 @@ function getRegistrationErrorMessage(error: HttpErrorResponse): string {
 
   if (error.status === 409) {
     return 'Ya existe una cuenta con ese correo o nombre de usuario.';
+  }
+
+  if (error.status === 401) {
+    return 'La API respondió HTTP 401 (No autorizado) al registrar y no devolvió una causa concreta. Comprueba que POST /usuarios permita crear cuentas sin iniciar sesión.';
   }
 
   return `La API rechazó el registro (HTTP ${error.status})${

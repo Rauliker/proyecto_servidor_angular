@@ -11,7 +11,7 @@ if (fs.existsSync(envFile)) {
 
 const [command, ...args] = process.argv.slice(2);
 const commandsWithApiUrl = new Set(['build', 'serve']);
-const apiBaseUrl = (process.env.API_BASE_URL ?? 'http://localhost:8080').trim().replace(/\/+$/, '');
+const apiBaseUrl = (process.env.API_BASE_URL ?? 'http://localhost:8080/api').trim().replace(/\/+$/, '');
 
 if (commandsWithApiUrl.has(command)) {
   if (!apiBaseUrl) {

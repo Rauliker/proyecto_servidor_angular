@@ -1,10 +1,28 @@
-import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { inject, Injectable, isDevMode } from '@angular/core';
+import { map, Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthState } from './auth-state.service';
 import { LoginCredentials } from '../models/login-credentials';
 import { RegistrationDetails } from '../models/registration-details';
+
+function redactSensitiveData(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(redactSensitiveData);
+  }
+  if (typeof value !== 'object' || value === null) {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, nestedValue]) => [
+      key,
+      /password|token|authorization|secret/i.test(key)
+        ? '[REDACTED]'
+        : redactSensitiveData(nestedValue),
+    ]),
+  );
+}
 
 export interface LoginResponse {
   accessToken: string;
@@ -35,7 +53,44 @@ export class AuthService {
   }
 
   register(details: RegistrationDetails): Observable<unknown> {
-    return this.http.post(`${this.baseUrl}/usuarios`, details);
+    const url = `${this.baseUrl}/usuarios`;
+    if (isDevMode()) {
+      console.info('[HTTP request]', {
+        method: 'POST',
+        url,
+        body: details,
+      });
+    }
+
+    return this.http.post(url, details).pipe(
+      tap({
+        next: (body) => {
+          if (isDevMode()) {
+            console.info('[HTTP response]', {
+              method: 'POST',
+              url,
+              body: redactSensitiveData(body),
+            });
+          }
+        },
+        error: (error: unknown) => {
+          if (!isDevMode()) {
+            return;
+          }
+          if (error instanceof HttpErrorResponse) {
+            console.error('[HTTP response error]', {
+              method: 'POST',
+              url,
+              status: error.status,
+              statusText: error.statusText,
+              body: redactSensitiveData(error.error),
+            });
+            return;
+          }
+          console.error('[HTTP request failure]', { method: 'POST', url, error });
+        },
+      }),
+    );
   }
 
   logout(): void {

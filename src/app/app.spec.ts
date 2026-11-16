@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LoginPage } from './pages/login-page';
 import { AuthService } from './services/auth.service';
+import { authInterceptor } from './services/auth.interceptor';
 import { AuthState } from './services/auth-state.service';
 import { environment } from '../environments/environment';
 
@@ -15,7 +16,7 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withInterceptors([authInterceptor])), provideHttpClientTesting()],
     }).compileComponents();
     httpTesting = TestBed.inject(HttpTestingController);
     authService = TestBed.inject(AuthService);
@@ -53,6 +54,20 @@ describe('AuthService', () => {
       email: 'ana@example.com',
       password: 'clave-segura',
     });
+    request.flush(null);
+  });
+
+  it('does not send a stored token when registering', () => {
+    authState.setToken('expired-token');
+    authService.register({
+      nombre: 'Ana Pérez',
+      userName: 'ana',
+      email: 'ana@example.com',
+      password: 'clave-segura',
+    }).subscribe();
+
+    const request = httpTesting.expectOne(`${environment.apiBaseUrl}/usuarios`);
+    expect(request.request.headers.has('Authorization')).toBe(false);
     request.flush(null);
   });
 });

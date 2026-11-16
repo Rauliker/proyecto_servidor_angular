@@ -2,12 +2,16 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { AuthState } from './auth-state.service';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const authState = inject(AuthState);
   const router = inject(Router);
-  const token = authState.token();
+  const isPublicAuthRequest =
+    request.url === `${environment.apiBaseUrl}/auth/login` ||
+    request.url === `${environment.apiBaseUrl}/usuarios`;
+  const token = isPublicAuthRequest ? null : authState.token();
   const authenticatedRequest = token
     ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
     : request;
