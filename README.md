@@ -12,6 +12,11 @@ La URL base de la API se configura con `API_BASE_URL` en `.env`; por defecto es
 `http://localhost:8080/api`. El inicio de sesión usa `POST /auth/login` y el registro
 usa `POST /usuarios`.
 
+HTTP sin TLS solo está permitido para `localhost` en desarrollo. En otros entornos,
+configura `API_BASE_URL` con una URL `https://`. La API debe terminar TLS, guardar
+contraseñas con un hash robusto (por ejemplo Argon2id o bcrypt) y limitar CORS a los
+orígenes necesarios; el frontend no puede sustituir esas protecciones.
+
 ## Validación
 
 - `npm test` ejecuta las pruebas unitarias.

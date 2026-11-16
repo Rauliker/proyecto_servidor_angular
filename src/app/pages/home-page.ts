@@ -226,7 +226,9 @@ export class HomePage implements OnInit {
   private handleError(error: HttpErrorResponse): void {
     this.errorMessage.set(
       error.status === 0
-        ? 'No se pudo conectar con la API local. Comprueba que el backend esté activo en localhost:8080 y permita CORS desde localhost:4200.'
+        ? error.error instanceof Error
+          ? error.error.message
+          : 'No se pudo conectar con la API local. Comprueba que el backend esté activo en localhost:8080 y permita CORS desde localhost:4200.'
         : error.status === 401
           ? 'Tu sesión ha caducado. Inicia sesión de nuevo.'
           : error.status === 403

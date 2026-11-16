@@ -6,24 +6,6 @@ import { AuthState } from './auth-state.service';
 import { LoginCredentials } from '../models/login-credentials';
 import { RegistrationDetails } from '../models/registration-details';
 
-function redactSensitiveData(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(redactSensitiveData);
-  }
-  if (typeof value !== 'object' || value === null) {
-    return value;
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).map(([key, nestedValue]) => [
-      key,
-      /password|token|authorization|secret/i.test(key)
-        ? '[REDACTED]'
-        : redactSensitiveData(nestedValue),
-    ]),
-  );
-}
-
 export interface LoginResponse {
   accessToken: string;
 }
@@ -58,18 +40,16 @@ export class AuthService {
       console.info('[HTTP request]', {
         method: 'POST',
         url,
-        body: details,
       });
     }
 
     return this.http.post(url, details).pipe(
       tap({
-        next: (body) => {
+        next: () => {
           if (isDevMode()) {
             console.info('[HTTP response]', {
               method: 'POST',
               url,
-              body: redactSensitiveData(body),
             });
           }
         },
@@ -83,7 +63,6 @@ export class AuthService {
               url,
               status: error.status,
               statusText: error.statusText,
-              body: redactSensitiveData(error.error),
             });
             return;
           }

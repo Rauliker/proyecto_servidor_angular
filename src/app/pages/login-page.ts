@@ -5,6 +5,9 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 function getRegistrationErrorMessage(error: HttpErrorResponse): string {
+  if (error.error instanceof Error) {
+    return error.error.message;
+  }
   if (error.status === 0) {
     return 'El navegador no pudo acceder a la API. Comprueba que el servidor permita CORS desde http://localhost:4200 y las peticiones OPTIONS.';
   }
@@ -443,16 +446,26 @@ export class LoginPage {
         }
         void this.router.navigateByUrl('/');
       },
-      error: (error: HttpErrorResponse) => {
-        this.errorMessage.set(
-          this.isRegistering
-            ? getRegistrationErrorMessage(error)
-            : error.status === 0
-            ? 'El navegador no pudo acceder a la API. Comprueba que el servidor permita CORS desde http://localhost:4200 y las peticiones OPTIONS.'
-            : error.status === 401
-              ? 'El correo o la contraseña no son correctos.'
+      error: (error: unknown) => {
+        if (error instanceof HttpErrorResponse) {
+          this.errorMessage.set(
+            this.isRegistering
+              ? getRegistrationErrorMessage(error)
+              : error.status === 0
+                ? error.error instanceof Error
+                  ? error.error.message
+                  : 'El navegador no pudo acceder a la API. Comprueba que el servidor permita CORS desde http://localhost:4200 y las peticiones OPTIONS.'
+                : error.status === 401
+                  ? 'El correo o la contraseña no son correctos.'
+                  : 'No se pudo completar la operación. Revisa los datos e inténtalo de nuevo.',
+          );
+        } else {
+          this.errorMessage.set(
+            error instanceof Error
+              ? error.message
               : 'No se pudo completar la operación. Revisa los datos e inténtalo de nuevo.',
-        );
+          );
+        }
         this.isLoading.set(false);
       },
     });
