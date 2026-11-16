@@ -1,5 +1,6 @@
 export interface RegistrationDetails {
-  name: string;
+  nombre: string;
+  userName: string;
   email: string;
   password: string;
 }

@@ -6,7 +6,7 @@
     "start": "node scripts/angular-cli.js serve",
     "build": "node scripts/angular-cli.js build",
     "watch": "node scripts/angular-cli.js build --watch --configuration development",
-    "test": "node scripts/angular-cli.js test",
+    "test": "vitest run",
     "serve:ssr:proyecto_servidor": "node dist/proyecto_servidor/server/server.mjs"
   },
   "private": true,
@@ -28,6 +28,7 @@
     "@angular/build": "^22.2.7",
     "@angular/cli": "^22.2.7",
     "@angular/compiler-cli": "^22.2.0",
+    "@angular/platform-browser-dynamic": "^22.2.6",
     "@types/express": "^5.0.1",
     "@types/node": "^22.12.0",
     "jsdom": "^30.0.0",

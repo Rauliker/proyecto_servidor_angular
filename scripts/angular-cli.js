@@ -11,22 +11,14 @@ if (fs.existsSync(envFile)) {
 
 const [command, ...args] = process.argv.slice(2);
 const commandsWithApiUrl = new Set(['build', 'serve']);
-const apiUrl = (process.env.API_URL ?? '/api/auth/login').trim();
-const registerApiUrl = (process.env.API_REGISTER_URL ?? '/api/auth/register').trim();
+const apiBaseUrl = (process.env.API_BASE_URL ?? 'http://localhost:8080').trim().replace(/\/+$/, '');
 
 if (commandsWithApiUrl.has(command)) {
-  if (!apiUrl) {
-    console.error('API_URL no puede estar vacío en el archivo .env.');
+  if (!apiBaseUrl) {
+    console.error('API_BASE_URL no puede estar vacío en el archivo .env.');
     process.exit(1);
   }
-  if (!registerApiUrl) {
-    console.error('API_REGISTER_URL no puede estar vacío en el archivo .env.');
-    process.exit(1);
-  }
-  args.unshift(
-    `--define=__API_URL__=${JSON.stringify(apiUrl)}`,
-    `--define=__REGISTER_API_URL__=${JSON.stringify(registerApiUrl)}`,
-  );
+  args.unshift(`--define=__API_BASE_URL__=${JSON.stringify(apiBaseUrl)}`);
 }
 
 const angularCli = path.join(projectRoot, 'node_modules', '@angular', 'cli', 'bin', 'ng.js');

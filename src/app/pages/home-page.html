@@ -1,0 +1,309 @@
+<div class="workspace">
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Inicio">
+      <span class="brand-icon">Q</span><span>¿Quién hizo qué?</span>
+    </a>
+    <div class="household-picker">
+      <label for="household">Piso activo</label>
+      <select
+        id="household"
+        [value]="selectedId() ?? ''"
+        (change)="onHouseholdChange($any($event.target).value)"
+      >
+        @for (household of households(); track household.idPiso) {
+          <option [value]="household.idPiso">{{ household.nombre }}</option>
+        }
+      </select>
+    </div>
+    <nav aria-label="Navegación principal">
+      <button [class.active]="view() === 'overview'" (click)="selectView('overview')">
+        Resumen
+      </button>
+      <button [class.active]="view() === 'tasks'" (click)="selectView('tasks')">Tareas</button>
+      <button [class.active]="view() === 'expenses'" (click)="selectView('expenses')">
+        Gastos
+      </button>
+      <button [class.active]="view() === 'households'" (click)="selectView('households')">
+        Pisos
+      </button>
+      <button [class.active]="view() === 'members'" (click)="selectView('members')">
+        Miembros
+      </button>
+    </nav>
+    <button class="logout" (click)="logout()">Cerrar sesión</button>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Tu hogar compartido</p>
+        <h1>{{ selectedHousehold?.nombre || 'Organiza tu piso' }}</h1>
+      </div>
+      @if (selectedHousehold?.codigoInvitacion) {
+        <span class="invite-code">Invitación: {{ selectedHousehold?.codigoInvitacion }}</span>
+      }
+    </header>
+
+    @if (errorMessage()) {
+      <p class="alert error" role="alert">{{ errorMessage() }}</p>
+    }
+    @if (notice()) {
+      <p class="alert success" role="status">{{ notice() }}</p>
+    }
+    @if (isLoading()) {
+      <p class="loading" role="status">Guardando…</p>
+    }
+
+    @if (!households().length) {
+      <section class="panel empty-state">
+        <h2>Empieza creando tu piso</h2>
+        <p>Después podrás organizar tareas y registrar los gastos compartidos.</p>
+        <form class="inline-form" (ngSubmit)="createHousehold()">
+          <input
+            name="householdName"
+            [(ngModel)]="householdName"
+            placeholder="Nombre del piso"
+            required
+          />
+          <button class="button" [disabled]="isLoading() || !householdName.trim()">
+            Crear piso
+          </button>
+        </form>
+      </section>
+    } @else {
+      @if (view() === 'overview') {
+        <section class="summary-grid">
+          <article class="summary-card">
+            <span>Tareas pendientes</span><strong>{{ pendingCount }}</strong>
+          </article>
+          <article class="summary-card">
+            <span>Tareas completadas</span><strong>{{ tasks().length - pendingCount }}</strong>
+          </article>
+          <article class="summary-card">
+            <span>Gastos registrados</span><strong>{{ expenses().length }}</strong>
+          </article>
+          <article class="summary-card">
+            <span>Total de gastos</span><strong>{{ totalExpenses | currency: 'EUR' }}</strong>
+          </article>
+        </section>
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Actividad reciente</h2>
+              <p>Resumen del piso seleccionado</p>
+            </div>
+          </div>
+          @if (!tasks().length && !expenses().length) {
+            <p class="muted">Todavía no hay actividad. Añade una tarea o registra un gasto.</p>
+          } @else {
+            <div class="activity-list">
+              @for (task of tasks().slice(0, 4); track task.idTarea) {
+                <div class="activity-row">
+                  <span class="dot task-dot"></span><span>{{ task.titulo }}</span
+                  ><small>{{ task.completada ? 'Completada' : 'Pendiente' }}</small>
+                </div>
+              }
+              @for (expense of expenses().slice(0, 4); track expense.idGasto) {
+                <div class="activity-row">
+                  <span class="dot expense-dot"></span><span>{{ expense.concepto }}</span
+                  ><small>{{ expense.cantidad | currency: 'EUR' }}</small>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      @if (view() === 'tasks') {
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Tareas</h2>
+              <p>Organiza lo que hay que hacer en casa.</p>
+            </div>
+          </div>
+          <form class="entry-form" (ngSubmit)="createTask()">
+            <input
+              name="taskTitle"
+              [(ngModel)]="taskTitle"
+              placeholder="Título de la tarea"
+              required
+            />
+            <input name="taskDescription" [(ngModel)]="taskDescription" placeholder="Descripción" />
+            <div class="form-row">
+              <label
+                >Fecha límite<input type="date" name="taskDueDate" [(ngModel)]="taskDueDate"
+              /></label>
+              <label
+                >Asignar a<select name="taskAssignee" [(ngModel)]="taskAssignee">
+                  <option value="">Sin asignar</option>
+                  @for (member of members(); track member.idMiembroPiso) {
+                    <option [value]="member.idUsuario">{{ memberName(member.idUsuario) }}</option>
+                  }
+                </select></label
+              >
+              <button class="button" [disabled]="isLoading() || !taskTitle.trim()">
+                Añadir tarea
+              </button>
+            </div>
+          </form>
+          @if (!tasks().length) {
+            <p class="muted">No hay tareas para este piso.</p>
+          }
+          @for (task of tasks(); track task.idTarea) {
+            <div class="list-row">
+              <button
+                class="check"
+                [class.checked]="task.completada"
+                (click)="toggleTask(task)"
+                [attr.aria-label]="task.completada ? 'Marcar pendiente' : 'Marcar completada'"
+              >
+                {{ task.completada ? '✓' : '' }}
+              </button>
+              <div class="row-main">
+                <strong [class.strike]="task.completada">{{ task.titulo }}</strong
+                ><small
+                  >{{ task.descripcion || 'Sin descripción' }} ·
+                  {{ memberName(task.idUsuarioAsignado) }}
+                  @if (task.fechaLimite) {
+                    · {{ task.fechaLimite }}
+                  }
+                </small>
+              </div>
+              <button class="text-danger" (click)="deleteTask(task)">Eliminar</button>
+            </div>
+          }
+        </section>
+      }
+
+      @if (view() === 'expenses') {
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Gastos</h2>
+              <p>Total registrado: {{ totalExpenses | currency: 'EUR' }}</p>
+            </div>
+          </div>
+          <form class="entry-form" (ngSubmit)="createExpense()">
+            <div class="form-row">
+              <input
+                name="expenseConcept"
+                [(ngModel)]="expenseConcept"
+                placeholder="Concepto"
+                required
+              />
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                name="expenseAmount"
+                [(ngModel)]="expenseAmount"
+                placeholder="Importe (€)"
+                required
+              />
+              <input name="expenseCategory" [(ngModel)]="expenseCategory" placeholder="Categoría" />
+            </div>
+            <div class="form-row">
+              <label
+                >Fecha<input type="date" name="expenseDate" [(ngModel)]="expenseDate" required
+              /></label>
+              <label
+                >Pagado por<select name="expensePayer" [(ngModel)]="expensePayer" required>
+                  <option value="">Selecciona un miembro</option>
+                  @for (member of members(); track member.idMiembroPiso) {
+                    <option [value]="member.idUsuario">{{ memberName(member.idUsuario) }}</option>
+                  }
+                </select></label
+              >
+              <button
+                class="button"
+                [disabled]="
+                  isLoading() || !expenseConcept.trim() || !expenseAmount || !expensePayer
+                "
+              >
+                Registrar gasto
+              </button>
+            </div>
+          </form>
+          @if (!expenses().length) {
+            <p class="muted">No hay gastos para este piso.</p>
+          }
+          @for (expense of expenses(); track expense.idGasto) {
+            <div class="list-row">
+              <span class="expense-icon">€</span>
+              <div class="row-main">
+                <strong>{{ expense.concepto }}</strong
+                ><small
+                  >{{ expenseCategoryOf(expense) }} · {{ expense.fecha }} · Pagó
+                  {{ memberName(expense.idUsuarioPagador) }}</small
+                >
+              </div>
+              <strong class="amount">{{ expense.cantidad | currency: 'EUR' }}</strong>
+              <button class="text-danger" (click)="deleteExpense(expense)">Eliminar</button>
+            </div>
+          }
+        </section>
+      }
+
+      @if (view() === 'households') {
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Tus pisos</h2>
+              <p>Selecciona el piso en el que quieres trabajar.</p>
+            </div>
+          </div>
+          @for (household of households(); track household.idPiso) {
+            <button
+              class="household-row"
+              [class.selected]="selectedId() === household.idPiso"
+              (click)="onHouseholdChange('' + household.idPiso)"
+            >
+              <span class="house-icon">⌂</span><span>{{ household.nombre }}</span
+              ><span class="muted">{{
+                selectedId() === household.idPiso ? 'Seleccionado' : 'Abrir'
+              }}</span>
+            </button>
+          }
+          <form class="inline-form" (ngSubmit)="createHousehold()">
+            <input
+              name="newHouseholdName"
+              [(ngModel)]="householdName"
+              placeholder="Nombre del nuevo piso"
+              required
+            />
+            <button class="button" [disabled]="isLoading() || !householdName.trim()">
+              Crear piso
+            </button>
+          </form>
+        </section>
+      }
+
+      @if (view() === 'members') {
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Miembros</h2>
+              <p>Personas vinculadas a este piso.</p>
+            </div>
+          </div>
+          @if (!members().length) {
+            <p class="muted">No se encontraron miembros para este piso.</p>
+          }
+          @for (member of members(); track member.idMiembroPiso) {
+            <div class="list-row">
+              <span class="avatar">{{
+                memberName(member.idUsuario).slice(0, 1).toUpperCase()
+              }}</span>
+              <div class="row-main">
+                <strong>{{ memberName(member.idUsuario) }}</strong
+                ><small>{{ member.usuario?.email || 'Correo no disponible' }}</small>
+              </div>
+              <span class="role">{{ member.rol }}</span>
+            </div>
+          }
+        </section>
+      }
+    }
+  </main>
+</div>
