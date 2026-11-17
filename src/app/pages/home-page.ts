@@ -74,6 +74,10 @@ export class HomePage implements OnInit {
     const nombre = this.householdName.trim();
     if (!nombre || this.isLoading()) return;
     this.run(this.api.createHousehold(nombre), (household) => {
+      if (!this.isValidHouseholdId(household?.idPiso)) {
+        this.errorMessage.set('La API devolvió un piso sin un idPiso válido.');
+        return;
+      }
       this.householdName = '';
       this.households.update((current) => [...current, household]);
       this.selectedId.set(household.idPiso);
@@ -196,18 +200,29 @@ export class HomePage implements OnInit {
   }
 
   private updateHouseholds(households: Household[]): void {
-    this.households.set(households);
+    const validHouseholds = households.filter((household) =>
+      this.isValidHouseholdId(household.idPiso),
+    );
+    this.households.set(validHouseholds);
     const savedId = Number(sessionStorage.getItem('selectedHouseholdId'));
-    const selected = households.find((household) => household.idPiso === savedId) ?? households[0];
+    const selected =
+      validHouseholds.find((household) => household.idPiso === savedId) ?? validHouseholds[0];
     if (selected) {
       this.selectedId.set(selected.idPiso);
       this.loadHouseholdData(selected.idPiso);
     } else {
       this.selectedId.set(null);
+      if (households.length > 0) {
+        this.errorMessage.set('La API devolvió pisos sin un idPiso válido.');
+      }
     }
   }
 
   private loadHouseholdData(householdId: number): void {
+    if (!this.isValidHouseholdId(householdId)) {
+      this.errorMessage.set('No se pueden cargar los datos: el piso no tiene un idPiso válido.');
+      return;
+    }
     this.errorMessage.set('');
     this.api.getTasks(householdId).subscribe({
       next: (tasks) => this.tasks.set(tasks),
@@ -222,6 +237,10 @@ export class HomePage implements OnInit {
         this.members.set(members.filter((member) => member.idPiso === householdId)),
       error: (error: HttpErrorResponse) => this.handleError(error),
     });
+  }
+
+  private isValidHouseholdId(id: number | null | undefined): id is number {
+    return typeof id === 'number' && Number.isInteger(id) && id > 0;
   }
 
   private run<T>(request: import('rxjs').Observable<T>, onSuccess: (value: T) => void): void {

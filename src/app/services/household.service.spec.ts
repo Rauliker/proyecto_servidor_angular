@@ -29,6 +29,29 @@ describe('HouseholdService', () => {
     authState.clear();
   });
 
+  it('normalizes the API household ID to idPiso', () => {
+    let result: unknown;
+    householdService.getHouseholds().subscribe((households) => (result = households));
+
+    httpTesting.expectOne(`${environment.apiBaseUrl}/pisos`).flush([
+      {
+        IdPiso: 5,
+        nombre: 'piso uno',
+        codigoInvitacion: 'RXEV0K4KL5',
+        idUsuario: 6,
+      },
+    ]);
+
+    expect(result).toEqual([
+      {
+        idPiso: 5,
+        nombre: 'piso uno',
+        codigoInvitacion: 'RXEV0K4KL5',
+        idUsuario: 6,
+      },
+    ]);
+  });
+
   it('joins a household with its invitation code and the logged-in user token', () => {
     authState.setToken('user-token');
     householdService.joinHousehold('PISO-ABC123').subscribe();

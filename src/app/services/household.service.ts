@@ -1,8 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Household, HouseholdExpense, HouseholdMember, HouseholdTask } from '../models/household';
+
+interface HouseholdApiResponse extends Omit<Household, 'idPiso'> {
+  IdPiso: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class HouseholdService {
@@ -10,11 +14,18 @@ export class HouseholdService {
   private readonly baseUrl = environment.apiBaseUrl;
 
   getHouseholds(): Observable<Household[]> {
-    return this.http.get<Household[]>(`${this.baseUrl}/pisos`);
+    return this.http
+      .get<HouseholdApiResponse[]>(`${this.baseUrl}/pisos`)
+      .pipe(map((households) => households.map(({ IdPiso, ...household }) => ({
+        ...household,
+        idPiso: IdPiso,
+      }))));
   }
 
   createHousehold(nombre: string): Observable<Household> {
-    return this.http.post<Household>(`${this.baseUrl}/pisos`, { nombre });
+    return this.http
+      .post<HouseholdApiResponse>(`${this.baseUrl}/pisos`, { nombre })
+      .pipe(map(({ IdPiso, ...household }) => ({ ...household, idPiso: IdPiso })));
   }
 
   joinHousehold(codigoInvitacion: string): Observable<void> {

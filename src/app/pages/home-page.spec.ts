@@ -76,4 +76,17 @@ describe('HomePage', () => {
     expect(fixture.nativeElement.querySelector('.join-form')).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Unirme a otro piso');
   });
+
+  it('does not request household data when a household has no valid idPiso', () => {
+    authState.setToken('user-token');
+    const fixture = TestBed.createComponent(HomePage);
+    fixture.detectChanges();
+
+    httpTesting.expectOne(`${environment.apiBaseUrl}/pisos`).flush([{ nombre: 'Piso sin ID' }]);
+    fixture.detectChanges();
+
+    expect(httpTesting.match((request) => request.url.includes('/tareas/piso/')).length).toBe(0);
+    expect(httpTesting.match((request) => request.url.includes('/gastos/piso/')).length).toBe(0);
+    expect(fixture.nativeElement.textContent).toContain('La API devolvió pisos sin un idPiso válido.');
+  });
 });
