@@ -56,8 +56,8 @@
 
     @if (!households().length) {
       <section class="panel empty-state">
-        <h2>Empieza creando tu piso</h2>
-        <p>Después podrás organizar tareas y registrar los gastos compartidos.</p>
+        <h2>Crea un piso o únete a uno</h2>
+        <p>Crea un piso nuevo o introduce el código de invitación de uno existente.</p>
         <form class="inline-form" (ngSubmit)="createHousehold()">
           <input
             name="householdName"
@@ -67,6 +67,17 @@
           />
           <button class="button" [disabled]="isLoading() || !householdName.trim()">
             Crear piso
+          </button>
+        </form>
+        <form class="inline-form join-form" (ngSubmit)="joinHousehold()">
+          <input
+            name="invitationCode"
+            [(ngModel)]="invitationCode"
+            placeholder="Código de invitación"
+            required
+          />
+          <button class="button" [disabled]="isLoading() || !invitationCode.trim()">
+            Unirme a un piso
           </button>
         </form>
       </section>
@@ -274,6 +285,17 @@
             />
             <button class="button" [disabled]="isLoading() || !householdName.trim()">
               Crear piso
+            </button>
+          </form>
+          <form class="inline-form join-form" (ngSubmit)="joinHousehold()">
+            <input
+              name="invitationCode"
+              [(ngModel)]="invitationCode"
+              placeholder="Código de invitación"
+              required
+            />
+            <button class="button" [disabled]="isLoading() || !invitationCode.trim()">
+              Unirme a otro piso
             </button>
           </form>
         </section>

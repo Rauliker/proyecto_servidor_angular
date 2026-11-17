@@ -17,6 +17,10 @@ export class HouseholdService {
     return this.http.post<Household>(`${this.baseUrl}/pisos`, { nombre });
   }
 
+  joinHousehold(codigoInvitacion: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/miembros-pisos`, { codigoInvitacion });
+  }
+
   getTasks(householdId: number): Observable<HouseholdTask[]> {
     return this.http.get<HouseholdTask[]>(`${this.baseUrl}/tareas/piso/${householdId}`);
   }

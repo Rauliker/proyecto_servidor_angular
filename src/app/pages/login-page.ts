@@ -207,6 +207,20 @@ function getRegistrationErrorMessage(error: HttpErrorResponse): string {
       color: #bd3030;
       font-weight: 400;
     }
+    .remember-session {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: -4px 0 18px;
+      color: #273149;
+      font-size: 13px;
+    }
+    .remember-session input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: #3455d1;
+    }
     .password-requirements {
       display: grid;
       gap: 5px;
@@ -367,6 +381,13 @@ function getRegistrationErrorMessage(error: HttpErrorResponse): string {
               </label>
             }
 
+            @if (!isRegistering) {
+              <label class="remember-session">
+                <input type="checkbox" name="rememberMe" [(ngModel)]="rememberMe" />
+                <span>Mantener sesión iniciada</span>
+              </label>
+            }
+
             <button
               class="primary-button"
               type="submit"
@@ -402,6 +423,7 @@ export class LoginPage {
   protected email = '';
   protected password = '';
   protected confirmPassword = '';
+  protected rememberMe = false;
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal(
     (this.router.getCurrentNavigation()?.extras.state?.['message'] as string | undefined) ?? '',
@@ -432,7 +454,10 @@ export class LoginPage {
           email: this.email.trim(),
           password: this.password,
         })
-      : this.authService.login({ email: this.email.trim(), password: this.password });
+      : this.authService.login(
+          { email: this.email.trim(), password: this.password },
+          this.rememberMe,
+        );
 
     request.subscribe({
       next: () => {

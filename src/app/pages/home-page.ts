@@ -3,6 +3,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
+import { switchMap } from 'rxjs';
 import { Household, HouseholdExpense, HouseholdMember, HouseholdTask } from '../models/household';
 import { AuthService } from '../services/auth.service';
 import { HouseholdService } from '../services/household.service';
@@ -29,6 +30,7 @@ export class HomePage implements OnInit {
   protected readonly isLoading = signal(false);
   protected readonly selectedId = signal<number | null>(null);
   protected householdName = '';
+  protected invitationCode = '';
   protected taskTitle = '';
   protected taskDescription = '';
   protected taskDueDate = '';
@@ -78,6 +80,19 @@ export class HomePage implements OnInit {
       this.loadHouseholdData(household.idPiso);
       this.notice.set('Piso creado correctamente.');
     });
+  }
+
+  protected joinHousehold(): void {
+    const codigoInvitacion = this.invitationCode.trim();
+    if (!codigoInvitacion || this.isLoading()) return;
+    this.run(
+      this.api.joinHousehold(codigoInvitacion).pipe(switchMap(() => this.api.getHouseholds())),
+      (households) => {
+        this.invitationCode = '';
+        this.updateHouseholds(households);
+        this.notice.set('Te has unido al piso correctamente.');
+      },
+    );
   }
 
   protected createTask(): void {
@@ -177,16 +192,19 @@ export class HomePage implements OnInit {
   }
 
   private loadHouseholds(): void {
-    this.run(this.api.getHouseholds(), (households) => {
-      this.households.set(households);
-      const savedId = Number(sessionStorage.getItem('selectedHouseholdId'));
-      const selected =
-        households.find((household) => household.idPiso === savedId) ?? households[0];
-      if (selected) {
-        this.selectedId.set(selected.idPiso);
-        this.loadHouseholdData(selected.idPiso);
-      }
-    });
+    this.run(this.api.getHouseholds(), (households) => this.updateHouseholds(households));
+  }
+
+  private updateHouseholds(households: Household[]): void {
+    this.households.set(households);
+    const savedId = Number(sessionStorage.getItem('selectedHouseholdId'));
+    const selected = households.find((household) => household.idPiso === savedId) ?? households[0];
+    if (selected) {
+      this.selectedId.set(selected.idPiso);
+      this.loadHouseholdData(selected.idPiso);
+    } else {
+      this.selectedId.set(null);
+    }
   }
 
   private loadHouseholdData(householdId: number): void {

@@ -16,7 +16,7 @@ export class AuthService {
   private readonly authState = inject(AuthState);
   private readonly baseUrl = environment.apiBaseUrl;
 
-  login(credentials: LoginCredentials): Observable<LoginResponse> {
+  login(credentials: LoginCredentials, rememberMe = false): Observable<LoginResponse> {
     return this.http.post<unknown>(`${this.baseUrl}/auth/login`, credentials).pipe(
       map((response) => {
         if (
@@ -28,7 +28,7 @@ export class AuthService {
         ) {
           throw new Error('La API no devolvió un accessToken válido.');
         }
-        this.authState.setToken(response.accessToken);
+        this.authState.setToken(response.accessToken, rememberMe);
         return { accessToken: response.accessToken };
       }),
     );

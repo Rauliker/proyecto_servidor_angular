@@ -17,6 +17,11 @@ configura `API_BASE_URL` con una URL `https://`. La API debe terminar TLS, guard
 contraseñas con un hash robusto (por ejemplo Argon2id o bcrypt) y limitar CORS a los
 orígenes necesarios; el frontend no puede sustituir esas protecciones.
 
+En el inicio de sesión, “Mantener sesión iniciada” guarda el token en el almacenamiento
+persistente del navegador; sin marcarlo, se conserva solo en la sesión actual. El
+almacenamiento del navegador es accesible desde JavaScript; para mayor protección,
+la API debería gestionar la sesión con una cookie `HttpOnly`, `Secure` y `SameSite`.
+
 ## Validación
 
 - `npm test` ejecuta las pruebas unitarias.

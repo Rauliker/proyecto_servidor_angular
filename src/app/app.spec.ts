@@ -16,7 +16,10 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideHttpClient(withInterceptors([authInterceptor])), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClientTesting(),
+      ],
     }).compileComponents();
     httpTesting = TestBed.inject(HttpTestingController);
     authService = TestBed.inject(AuthService);
@@ -35,6 +38,15 @@ describe('AuthService', () => {
     expect(request.request.body).toEqual({ email: 'ana@example.com', password: 'clave-segura' });
     request.flush({ accessToken: 'test-token' });
     expect(authState.token()).toBe('test-token');
+  });
+
+  it('stores the access token persistently when remember me is selected', () => {
+    authService.login({ email: 'ana@example.com', password: 'clave-segura' }, true).subscribe();
+    const request = httpTesting.expectOne(`${environment.apiBaseUrl}/auth/login`);
+    request.flush({ accessToken: 'remembered-token' });
+
+    expect(localStorage.getItem('accessToken')).toBe('remembered-token');
+    expect(sessionStorage.getItem('accessToken')).toBeNull();
   });
 
   it('registers with the documented user fields', () => {
@@ -59,12 +71,14 @@ describe('AuthService', () => {
 
   it('does not send a stored token when registering', () => {
     authState.setToken('expired-token');
-    authService.register({
-      nombre: 'Ana Pérez',
-      userName: 'ana',
-      email: 'ana@example.com',
-      password: 'clave-segura',
-    }).subscribe();
+    authService
+      .register({
+        nombre: 'Ana Pérez',
+        userName: 'ana',
+        email: 'ana@example.com',
+        password: 'clave-segura',
+      })
+      .subscribe();
 
     const request = httpTesting.expectOne(`${environment.apiBaseUrl}/usuarios`);
     expect(request.request.headers.has('Authorization')).toBe(false);
