@@ -52,11 +52,9 @@ describe('HomePage', () => {
       'input[name="invitationCode"]',
     ) as HTMLInputElement;
     invitationInput.value = 'PISO-ABC123';
-    invitationInput.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.componentInstance['invitationCode'] = 'PISO-ABC123';
     fixture.detectChanges();
-    (fixture.nativeElement.querySelector('.join-form') as HTMLFormElement).dispatchEvent(
-      new Event('submit', { bubbles: true, cancelable: true }),
-    );
+    fixture.componentInstance['joinHousehold']();
 
     const joinRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/miembros-pisos`);
     expect(joinRequest.request.method).toBe('POST');
@@ -64,6 +62,9 @@ describe('HomePage', () => {
     httpTesting
       .expectOne(`${environment.apiBaseUrl}/pisos`)
       .flush([{ idPiso: 4, nombre: 'Piso compartido' }]);
+    httpTesting.expectOne(`${environment.apiBaseUrl}/tareas/piso/4`).flush([]);
+    httpTesting.expectOne(`${environment.apiBaseUrl}/gastos/piso/4`).flush([]);
+    httpTesting.expectOne(`${environment.apiBaseUrl}/miembros-pisos`).flush([]);
     fixture.detectChanges();
 
     const pisosButton = [...fixture.nativeElement.querySelectorAll('nav button')].find(
