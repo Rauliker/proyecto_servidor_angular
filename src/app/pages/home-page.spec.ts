@@ -5,10 +5,10 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../environments/environment';
-import { authInterceptor } from '../services/auth.interceptor';
 import { AuthState } from '../services/auth-state.service';
+import { authInterceptor } from '../services/auth.interceptor';
 import { HomePage } from './home-page';
 
 describe('HomePage', () => {
@@ -162,5 +162,47 @@ describe('HomePage', () => {
     expect(fixture.nativeElement.textContent).toContain('raul');
     expect(fixture.nativeElement.textContent).not.toContain('miembro_username');
     expect(fixture.nativeElement.textContent).not.toContain('Usuario 13');
+  });
+
+  it('leaves the selected household and shows the empty state when it was the last one', () => {
+    const tokenPayload = btoa(JSON.stringify({ idUsuario: 13 }));
+    authState.setToken(`header.${tokenPayload}.signature`);
+    sessionStorage.setItem('selectedHouseholdId', '4');
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const fixture = TestBed.createComponent(HomePage);
+    fixture.detectChanges();
+
+    httpTesting
+      .expectOne(`${environment.apiBaseUrl}/pisos`)
+      .flush([{ IdPiso: 4, nombre: 'Piso compartido' }]);
+    httpTesting.expectOne(`${environment.apiBaseUrl}/tareas/piso/4`).flush([]);
+    httpTesting.expectOne(`${environment.apiBaseUrl}/gastos/piso/4`).flush([]);
+    httpTesting.expectOne(`${environment.apiBaseUrl}/miembros-pisos`).flush([]);
+    httpTesting.expectOne(`${environment.apiBaseUrl}/usuarios`).flush([]);
+
+    fixture.componentInstance['selectView']('households');
+    fixture.detectChanges();
+    const leaveButton = fixture.nativeElement.querySelector(
+      '.household-entry .text-danger',
+    ) as HTMLButtonElement;
+    leaveButton.click();
+
+    expect(confirmSpy).toHaveBeenCalledWith('¿Quieres salir del piso «Piso compartido»?');
+    httpTesting.expectOne(`${environment.apiBaseUrl}/miembros-pisos`).flush([
+      { idMiembro: 45, idPiso: 4, idUsuario: 12, rol: 'Miembro' },
+      { idMiembro: 77, idPiso: 4, idUsuario: 13, rol: 'Miembro' },
+    ]);
+    const request = httpTesting.expectOne(`${environment.apiBaseUrl}/miembros-pisos/77`);
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.headers.get('Authorization')).toBe(
+      `Bearer header.${tokenPayload}.signature`,
+    );
+    request.flush(null);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Crea un piso o únete a uno');
+    expect(fixture.nativeElement.textContent).toContain('Has salido del piso.');
+    expect(sessionStorage.getItem('selectedHouseholdId')).toBeNull();
+    confirmSpy.mockRestore();
   });
 });

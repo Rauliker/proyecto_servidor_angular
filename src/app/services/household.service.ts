@@ -38,6 +38,10 @@ export class HouseholdService {
     return this.http.post<void>(`${this.baseUrl}/miembros-pisos`, { codigoInvitacion });
   }
 
+  leaveHousehold(memberId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/miembros-pisos/${memberId}`);
+  }
+
   getTasks(householdId: number): Observable<HouseholdTask[]> {
     return this.http
       .get<HouseholdTask[]>(`${this.baseUrl}/tareas/piso/${householdId}`)
@@ -88,7 +92,9 @@ export class HouseholdService {
 
   private normalizeMember(member: HouseholdMember): HouseholdMember {
     const normalized = member as HouseholdMember & {
+      idMiembro?: number;
       IdMiembroPiso?: number;
+      IdMiembro?: number;
       IdPiso?: number;
       IdUsuario?: number;
       Nombre?: string;
@@ -97,7 +103,11 @@ export class HouseholdService {
     const nested = member.usuario ?? member.Usuario;
     return {
       ...member,
-      idMiembroPiso: member.idMiembroPiso ?? normalized.IdMiembroPiso!,
+      idMiembroPiso:
+        member.idMiembroPiso ??
+        normalized.idMiembro ??
+        normalized.IdMiembroPiso ??
+        normalized.IdMiembro!,
       idPiso: member.idPiso ?? normalized.IdPiso!,
       idUsuario: member.idUsuario ?? normalized.IdUsuario!,
       nombre: member.nombre ?? normalized.Nombre ?? nested?.nombre ?? nested?.Nombre,

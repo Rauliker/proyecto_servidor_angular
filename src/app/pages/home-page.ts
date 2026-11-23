@@ -3,7 +3,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { switchMap } from 'rxjs';
+import { map, switchMap } from 'rxjs';
 import {
   Household,
   HouseholdExpense,
@@ -13,6 +13,7 @@ import {
 } from '../models/household';
 import { AuthService } from '../services/auth.service';
 import { HouseholdService } from '../services/household.service';
+import { AuthState } from '../services/auth-state.service';
 
 type View = 'overview' | 'tasks' | 'expenses' | 'households' | 'members';
 
@@ -24,6 +25,7 @@ type View = 'overview' | 'tasks' | 'expenses' | 'households' | 'members';
 export class HomePage implements OnInit {
   private readonly api = inject(HouseholdService);
   private readonly auth = inject(AuthService);
+  private readonly authState = inject(AuthState);
   private readonly router = inject(Router);
 
   protected readonly view = signal<View>('overview');
@@ -103,6 +105,61 @@ export class HomePage implements OnInit {
         this.invitationCode = '';
         this.updateHouseholds(households);
         this.notice.set('Te has unido al piso correctamente.');
+      },
+    );
+  }
+
+  protected leaveHousehold(household: Household): void {
+    if (
+      this.isLoading() ||
+      !confirm(`¿Quieres salir del piso «${household.nombre}»?`)
+    ) {
+      return;
+    }
+
+    const userId = this.authState.userId();
+    if (!userId) {
+      this.errorMessage.set('No se pudo identificar al usuario de la sesión.');
+      return;
+    }
+
+    this.run(
+      this.api.getMembers().pipe(
+        map((members) => {
+          const membership = members.find(
+            (member) =>
+              Number(member.idPiso) === household.idPiso &&
+              Number(member.idUsuario) === userId,
+          );
+          const memberId = Number(membership?.idMiembroPiso);
+          if (!Number.isSafeInteger(memberId) || memberId <= 0) {
+            throw new Error('No se encontró tu membresía en este piso.');
+          }
+          return memberId;
+        }),
+        switchMap((memberId) => this.api.leaveHousehold(memberId)),
+      ),
+      () => {
+        const remainingHouseholds = this.households().filter(
+          (item) => item.idPiso !== household.idPiso,
+        );
+        this.households.set(remainingHouseholds);
+        this.notice.set('Has salido del piso.');
+
+        if (this.selectedId() !== household.idPiso) return;
+
+        this.tasks.set([]);
+        this.expenses.set([]);
+        this.members.set([]);
+        const nextHousehold = remainingHouseholds[0];
+        if (nextHousehold) {
+          this.selectedId.set(nextHousehold.idPiso);
+          sessionStorage.setItem('selectedHouseholdId', String(nextHousehold.idPiso));
+          this.loadHouseholdData(nextHousehold.idPiso);
+        } else {
+          this.selectedId.set(null);
+          sessionStorage.removeItem('selectedHouseholdId');
+        }
       },
     );
   }
@@ -296,7 +353,11 @@ export class HomePage implements OnInit {
     });
   }
 
-  private handleError(error: HttpErrorResponse): void {
+  private handleError(error: HttpErrorResponse | Error): void {
+    if (!(error instanceof HttpErrorResponse)) {
+      this.errorMessage.set(error.message);
+      return;
+    }
     this.errorMessage.set(
       error.status === 0
         ? error.error instanceof Error

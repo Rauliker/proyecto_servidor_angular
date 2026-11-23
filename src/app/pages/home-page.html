@@ -265,16 +265,26 @@
             </div>
           </div>
           @for (household of households(); track household.idPiso) {
-            <button
-              class="household-row"
-              [class.selected]="selectedId() === household.idPiso"
-              (click)="onHouseholdChange('' + household.idPiso)"
-            >
-              <span class="house-icon">⌂</span><span>{{ household.nombre }}</span
-              ><span class="muted">{{
-                selectedId() === household.idPiso ? 'Seleccionado' : 'Abrir'
-              }}</span>
-            </button>
+            <div class="household-entry">
+              <button
+                class="household-row"
+                [class.selected]="selectedId() === household.idPiso"
+                (click)="onHouseholdChange('' + household.idPiso)"
+              >
+                <span class="house-icon">⌂</span><span>{{ household.nombre }}</span
+                ><span class="muted">{{
+                  selectedId() === household.idPiso ? 'Seleccionado' : 'Abrir'
+                }}</span>
+              </button>
+              <button
+                class="text-danger"
+                type="button"
+                [disabled]="isLoading()"
+                (click)="leaveHousehold(household)"
+              >
+                Salir
+              </button>
+            </div>
           }
           <form class="inline-form" (ngSubmit)="createHousehold()">
             <input

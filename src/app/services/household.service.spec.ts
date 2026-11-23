@@ -62,4 +62,14 @@ describe('HouseholdService', () => {
     expect(request.request.headers.get('Authorization')).toBe('Bearer user-token');
     request.flush(null);
   });
+
+  it('leaves a household using its membership ID and the logged-in user token', () => {
+    authState.setToken('user-token');
+    householdService.leaveHousehold(77).subscribe();
+
+    const request = httpTesting.expectOne(`${environment.apiBaseUrl}/miembros-pisos/77`);
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer user-token');
+    request.flush(null);
+  });
 });

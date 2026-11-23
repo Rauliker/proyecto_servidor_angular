@@ -287,6 +287,10 @@ h1 {
   font-size: 12px;
   cursor: pointer;
 }
+.text-danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 .expense-icon,
 .avatar,
 .house-icon {
@@ -307,7 +311,8 @@ h1 {
 }
 .household-row {
   display: flex;
-  width: 100%;
+  min-width: 0;
+  flex: 1;
   align-items: center;
   gap: 12px;
   padding: 14px 0;
@@ -317,6 +322,15 @@ h1 {
   text-align: left;
   cursor: pointer;
   font: inherit;
+}
+.household-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid #eef0f4;
+}
+.household-entry .household-row {
+  border-top: 0;
 }
 .household-row .muted {
   margin-left: auto;
