@@ -4,7 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { switchMap } from 'rxjs';
-import { Household, HouseholdExpense, HouseholdMember, HouseholdTask } from '../models/household';
+import {
+  Household,
+  HouseholdExpense,
+  HouseholdMember,
+  HouseholdTask,
+  HouseholdUser,
+} from '../models/household';
 import { AuthService } from '../services/auth.service';
 import { HouseholdService } from '../services/household.service';
 
@@ -25,6 +31,7 @@ export class HomePage implements OnInit {
   protected readonly tasks = signal<HouseholdTask[]>([]);
   protected readonly expenses = signal<HouseholdExpense[]>([]);
   protected readonly members = signal<HouseholdMember[]>([]);
+  protected readonly users = signal<HouseholdUser[]>([]);
   protected readonly errorMessage = signal('');
   protected readonly notice = signal('');
   protected readonly isLoading = signal(false);
@@ -40,6 +47,7 @@ export class HomePage implements OnInit {
   protected expenseCategory = '';
   protected expenseDate = new Date().toISOString().slice(0, 10);
   protected expensePayer = '';
+  private usersLoaded = false;
 
   protected get selectedHousehold(): Household | undefined {
     return this.households().find((household) => household.idPiso === this.selectedId());
@@ -184,10 +192,29 @@ export class HomePage implements OnInit {
     void this.router.navigateByUrl('/login');
   }
 
-  protected memberName(id: number | null | undefined): string {
-    const member = this.members().find((item) => item.idUsuario === id);
+  protected memberName(
+    id: number | string | null | undefined,
+    directName?: string,
+    nestedName?: { nombre?: string; Nombre?: string; userName?: string; UserName?: string },
+  ): string {
+    if (!id) return 'Sin asignar';
+    const userId = Number(id);
+    const member = this.members().find((item) => Number(item.idUsuario) === userId);
+    const user = member?.usuario ?? member?.Usuario;
     return (
-      member?.usuario?.nombre || member?.usuario?.userName || (id ? `Usuario ${id}` : 'Sin asignar')
+      this.users().find((item) => Number(item.idUsuario) === userId)?.userName ||
+      member?.userName ||
+      user?.userName ||
+      user?.UserName ||
+      nestedName?.userName ||
+      nestedName?.UserName ||
+      directName ||
+      nestedName?.nombre ||
+      nestedName?.Nombre ||
+      member?.nombre ||
+      user?.nombre ||
+      user?.Nombre ||
+      `Usuario ${id}`
     );
   }
 
@@ -237,6 +264,15 @@ export class HomePage implements OnInit {
         this.members.set(members.filter((member) => member.idPiso === householdId)),
       error: (error: HttpErrorResponse) => this.handleError(error),
     });
+    if (!this.usersLoaded) {
+      this.api.getUsers().subscribe({
+        next: (users) => {
+          this.users.set(users);
+          this.usersLoaded = true;
+        },
+        error: (error: HttpErrorResponse) => this.handleError(error),
+      });
+    }
   }
 
   private isValidHouseholdId(id: number | null | undefined): id is number {

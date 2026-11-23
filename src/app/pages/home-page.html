@@ -175,7 +175,7 @@
                 <strong [class.strike]="task.completada">{{ task.titulo }}</strong
                 ><small
                   >{{ task.descripcion || 'Sin descripción' }} ·
-                  {{ memberName(task.idUsuarioAsignado) }}
+                  {{ memberName(task.idUsuarioAsignado, task.nombreUsuarioAsignado, task.usuarioAsignado) }}
                   @if (task.fechaLimite) {
                     · {{ task.fechaLimite }}
                   }
@@ -246,7 +246,7 @@
                 <strong>{{ expense.concepto }}</strong
                 ><small
                   >{{ expenseCategoryOf(expense) }} · {{ expense.fecha }} · Pagó
-                  {{ memberName(expense.idUsuarioPagador) }}</small
+                  {{ memberName(expense.idUsuarioPagador, expense.nombreUsuarioPagador, expense.usuarioPagador) }}</small
                 >
               </div>
               <strong class="amount">{{ expense.cantidad | currency: 'EUR' }}</strong>

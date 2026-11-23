@@ -25,7 +25,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const router = inject(Router);
   const isPublicAuthRequest =
     request.url === `${environment.apiBaseUrl}/auth/login` ||
-    request.url === `${environment.apiBaseUrl}/usuarios`;
+    (request.method === 'POST' && request.url === `${environment.apiBaseUrl}/usuarios`);
   const token = isPublicAuthRequest ? null : authState.token();
   const authenticatedRequest = token
     ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
